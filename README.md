@@ -1,12 +1,12 @@
 # DAD 310 ADR Cue
 
-Version 0.3.0. Built for DAD 310: Sound Design for Film at Dakota State University.
+Version 0.3.1. Built for DAD 310: Sound Design for Film at Dakota State University.
 
 A REAPER script for replacing one line to picture. It provides scrolling phrase cues, a separate amber three-second count-in strip, three audio beeps, and guide playback control. Everything runs locally.
 
 ## Install
 
-[Download ADR Cue v0.3.0](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.3.0/dad310-adr-cue-v0.3.0.zip). Download the whole ZIP, not an individual Lua file.
+[Download ADR Cue v0.3.1](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.3.1/dad310-adr-cue-v0.3.1.zip). Download the whole ZIP, not an individual Lua file.
 
 1. Extract the entire ZIP into a permanent folder. Keep `DAD310_ADR_Cue.lua`, `adr_core.lua`, and `adr-beep.wav` together.
 2. In REAPER 7, open **Actions > Show action list**.
@@ -49,17 +49,17 @@ The tool restores the guide level and repeat setting when you stop, close its wi
 
 ## Switch to editing
 
-When you finish recording, stop playback and click **Edit in REAPER** at the top of the window.
+Stop playback and click **Edit in REAPER** at the top of the window.
 
-- Hides `ADR PHRASES`, `ADR COUNT-IN`, and the assigned guide track from the track panel and mixer.
-- Turns the guide volume down to zero without muting its track, so its video remains available. The count-in stays silent.
-- Leaves `ADR RECORD`, your takes, and other location-audio tracks unchanged.
+- Hides only `ADR PHRASES` and `ADR COUNT-IN` from the track panel and mixer.
+- Keeps your video/location track visible and leaves its audio unchanged.
+- Leaves `ADR RECORD`, your takes, and other tracks unchanged. Count-in beeps remain muted.
 
-Edit and comp your performances in REAPER's fixed item lanes. Hiding the original guide silences all audio on that track, so keep the location audio you want in the finished edit on a separate working track.
+For a scene with one replacement line, retain the location sound before and after that line. On a working copy of the location audio, split around the original line and remove or mute only that section. Fit the ADR there, add matching room tone where needed, and use short fades. Keep the untouched original synchronized on a separate safety track. The button does not cut, mute, or otherwise edit the scene for you.
 
-Click **Return to ADR** when you need another take. It restores the tracks' previous visibility and the guide's previous volume. The button only switches modes when playback is stopped. Rehearsal and recording are blocked while Edit mode is active.
+Click **Return to ADR** to restore the cue tracks' previous visibility when you need another take. Mode changes require stopped playback; rehearsal and recording are blocked in Edit mode.
 
-Edit mode stays active when you close the tool and saves with your project. Run the script again and click **Return to ADR** to restore the support tracks. No tracks or audio items are deleted.
+Edit mode persists after closing the tool and saves with your project. Version 0.3.1 also restores guide visibility and volume saved by 0.3.0 if you reopen the tool while its older Edit mode is active.
 
 ## Current limits
 

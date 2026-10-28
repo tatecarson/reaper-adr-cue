@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Edit mode hides only phrase and count-in tracks.
+- Keep the video/location track visible and preserve its audio throughout the scene.
+- Recover guide visibility and volume changed by 0.3.0 when reopening in Edit mode.
+
 ## 0.3.0
 
 - Add Edit in REAPER / Return to ADR toggle.

@@ -1,0 +1,4 @@
+.DS_Store
+peaks/
+*.reapeaks
+tests/results.txt

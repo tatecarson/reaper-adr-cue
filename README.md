@@ -1,12 +1,12 @@
 # DAD 310 ADR Cue
 
-Version 0.2.0. Built for DAD 310: Sound Design for Film at Dakota State University.
+Version 0.3.0. Built for DAD 310: Sound Design for Film at Dakota State University.
 
 A REAPER script for replacing one line to picture. It provides scrolling phrase cues, a separate amber three-second count-in strip, three audio beeps, and guide playback control. Everything runs locally.
 
 ## Install
 
-[Download ADR Cue v0.2.0](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.2.0/dad310-adr-cue-v0.2.0.zip). Download the whole ZIP, not an individual Lua file.
+[Download ADR Cue v0.3.0](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.3.0/dad310-adr-cue-v0.3.0.zip). Download the whole ZIP, not an individual Lua file.
 
 1. Extract the entire ZIP into a permanent folder. Keep `DAD310_ADR_Cue.lua`, `adr_core.lua`, and `adr-beep.wav` together.
 2. In REAPER 7, open **Actions > Show action list**.
@@ -46,6 +46,20 @@ Neutral controls prepare the cue. Blue controls rehearse it. The red Record butt
 For review, use REAPER's normal transport, mute the original guide, and audition and comp performances with fixed item lanes. Review controls are intentionally kept in REAPER; this tool does not rename takes or alter comp selections.
 
 The tool restores the guide level and repeat setting when you stop, close its window, or switch project tabs. Open the action again to work in a different project. Save the project after editing cues. Close the cue tool before mixing or rendering, and verify that `ADR COUNT-IN` is muted.
+
+## Switch to editing
+
+When you finish recording, stop playback and click **Edit in REAPER** at the top of the window.
+
+- Hides `ADR PHRASES`, `ADR COUNT-IN`, and the assigned guide track from the track panel and mixer.
+- Turns the guide volume down to zero without muting its track, so its video remains available. The count-in stays silent.
+- Leaves `ADR RECORD`, your takes, and other location-audio tracks unchanged.
+
+Edit and comp your performances in REAPER's fixed item lanes. Hiding the original guide silences all audio on that track, so keep the location audio you want in the finished edit on a separate working track.
+
+Click **Return to ADR** when you need another take. It restores the tracks' previous visibility and the guide's previous volume. The button only switches modes when playback is stopped. Rehearsal and recording are blocked while Edit mode is active.
+
+Edit mode stays active when you close the tool and saves with your project. Run the script again and click **Return to ADR** to restore the support tracks. No tracks or audio items are deleted.
 
 ## Current limits
 

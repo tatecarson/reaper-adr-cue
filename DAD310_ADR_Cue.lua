@@ -1,4 +1,4 @@
--- DAD 310 ADR Cue 0.2.0. Load this file through Actions > New action > Load ReaScript.
+-- DAD 310 ADR Cue 0.3.0. Load this file through Actions > New action > Load ReaScript.
 -- No SWS, ReaImGui, web server, or compiled plugin required.
 local r = reaper
 if r.set_action_options then r.set_action_options(1) end
@@ -34,6 +34,7 @@ local function valid(tr) return tr and r.ValidatePtr2(proj,tr,'MediaTrack*') end
 local function notice(s) message=s end
 local function bounds() return tonumber(get('start')),tonumber(get('finish')) end
 local function stopped()
+  if get('edit_mode')=='1' then notice('Click Return to ADR to reveal the cue tracks first.'); return false end
   if r.GetPlayStateEx(proj)~=0 then notice('Stop playback before editing the cue.'); return false end
   return true
 end
@@ -72,6 +73,63 @@ local function undo(label,fn)
   r.Undo_EndBlock2(proj,label,-1)
   r.UpdateArrange()
   if not ok then error(err) end
+end
+-- Edit mode persists in the project, even after closing this window.
+local function toggle_edit_mode()
+  if r.GetPlayStateEx(proj)~=0 then notice('Stop playback before switching between editing and ADR.'); return end
+  if run then restore() end
+  local editing=get('edit_mode')=='1'
+  if not editing then
+    local guide=track('guide')
+    if not guide or not track('phrases') then notice('Create a line and assign its guide before entering Edit mode.'); return end
+    if r.GetTrackEnvelopeByName(guide,'Volume') or r.GetTrackNumSends(guide,0)>0 or r.GetTrackNumSends(guide,1)>0 then
+      notice('Guide must have no volume automation or sends before Edit mode can silence it.'); return
+    end
+  end
+  undo(editing and 'Return to ADR tracks' or 'Hide ADR support tracks for editing',function()
+    if editing then
+      for i=1,tonumber(get('edit_count')) or 0 do
+        local prefix='edit_'..i..'_'
+        for j=0,r.CountTracks(proj)-1 do
+          local tr=r.GetTrack(proj,j)
+          if r.GetTrackGUID(tr)==get(prefix..'guid') then
+            for _,field in ipairs({'B_SHOWINTCP','B_SHOWINMIXER','D_VOL','B_MUTE'}) do
+              local value=tonumber(get(prefix..field))
+              if value then r.SetMediaTrackInfo_Value(tr,field,value) end
+            end
+            break
+          end
+        end
+      end
+      put('edit_mode','0')
+    else
+      local seen,count={},0
+      for _,key in ipairs({'phrases','beeps','guide'}) do
+        local tr=track(key)
+        if tr and not seen[r.GetTrackGUID(tr)] then
+          local guid=r.GetTrackGUID(tr);seen[guid]=true;count=count+1
+          local prefix='edit_'..count..'_'
+          put(prefix..'guid',guid)
+          for _,field in ipairs({'B_SHOWINTCP','B_SHOWINMIXER'}) do
+            put(prefix..field,r.GetMediaTrackInfo_Value(tr,field))
+            r.SetMediaTrackInfo_Value(tr,field,0)
+          end
+          -- Store only properties changed by this mode; leave the video enabled.
+          put(prefix..'D_VOL','');put(prefix..'B_MUTE','')
+          if key=='guide' then
+            put(prefix..'D_VOL',r.GetMediaTrackInfo_Value(tr,'D_VOL'))
+            r.SetMediaTrackInfo_Value(tr,'D_VOL',0)
+          elseif key=='beeps' then
+            put(prefix..'B_MUTE',r.GetMediaTrackInfo_Value(tr,'B_MUTE'))
+            r.SetMediaTrackInfo_Value(tr,'B_MUTE',1)
+          end
+        end
+      end
+      put('edit_count',count);put('edit_mode','1')
+    end
+    r.TrackList_AdjustWindows(false)
+  end)
+  notice(editing and 'ADR tracks restored. Rehearse or record when ready.' or 'Edit mode: support tracks hidden and guide silent. Edit your takes in REAPER. Return to ADR restores the previous track settings.')
 end
 local function make_beeps(start)
   local tr=ensure('beeps','ADR COUNT-IN (muted when idle)')
@@ -207,6 +265,8 @@ local tips={
   ['Perform']='Practice without the original. Does not record.',
   ['Record']='Record onto the armed ADR RECORD track.',
   ['Stop']='Stop and restore guide and take levels.',
+  ['Edit in REAPER']='Hide cue/guide tracks and silence the guide.',
+  ['Return to ADR']='Restore the previous track visibility and guide level.',
   ['Help']='Setup, recording, and troubleshooting.'
 }
 local help_pages={
@@ -222,10 +282,10 @@ local help_pages={
     'For Record: save the project, choose your microphone input on ADR RECORD, arm that track, and disarm all other tracks. Use normal record mode and headphones.',
     "Click Record HERE, not on REAPER's transport, for automatic guide control. Hear three beeps; speak on the silent fourth beat. Recording stops one second after the line.",
     'Previous ADR RECORD items are silenced during each run and restored afterward. Use Record again for another take. Keep the files if REAPER asks.',
-    "Review in REAPER using fixed item lanes. Mute the original guide, audition performances, and comp your chosen phrases with REAPER's lane controls.",
+    "Click Edit in REAPER to hide cue/guide tracks and silence the guide. Comp in fixed item lanes; Return to ADR restores visibility and guide level.",
     'Space toggles rehearsal/stop in the cue window. In Help, Space only stops an active run. Escape closes Help; a second Escape closes the tool.'}},
   {title='3 / If something does not work',body={
-    'Nothing starts? Read the yellow status message below the cues. Clear solos, unmute the guide, and set project playback rate to 1.0.',
+    'Nothing starts? Read the status message below the cues. Clear solos, unmute the guide, and set project playback rate to 1.0.',
     'Four-second warning? The time selection must start at least four seconds into the project. Move the video later and select the spoken line again.',
     'Words out of sync? Move phrase items to match the original. Only phrase beginnings are timed; words within each phrase are not aligned individually.',
     "Original audible while recording? Use this window's Record button and assign the correct guide. Check for another copy playing on a different track.",
@@ -304,13 +364,21 @@ local function frame()
     hovered='Help'
     if pressed then help_open=true end
   end
+  local edit_label=get('edit_mode')=='1' and 'Return to ADR' or 'Edit in REAPER'
+  local edit_hover=inside(w-280,14,168,30)
+  color(.18,edit_hover and .30 or .24,.31);gfx.rect(w-280,14,168,30,true)
+  color(.95,.94,.89);text(w-270,21,edit_label,15)
+  if not help_open and edit_hover then
+    hovered=edit_label
+    if pressed then toggle_edit_mode() end
+  end
   local sections={
     {name='1  SETUP',indices={1,2}},
     {name='2  EDIT TIMING',indices={3,4}},
     {name='3  REHEARSE',indices={5,6}},
     {name='4  RECORD',indices={7,8}}
   }
-  local tip_x,tip_y=w-100,48
+  local tip_x,tip_y=edit_hover and w-280 or w-100,48
   for column,section in ipairs(sections) do
     local panel=(w-70)/4;local x=20+(column-1)*(panel+10)
     color(.10,.12,.15);gfx.rect(x,76,panel,110,true)
@@ -345,11 +413,12 @@ local function frame()
   if mode=='Record' then color(1,.49,.51)
   elseif run then color(.48,.75,1) else color(.85,.89,.94) end
   local title=mode and (mode=='Record' and 'RECORDING' or mode=='Rehearse' and 'REHEARSING' or 'PERFORMING') or 'READY'
-  if not a then title='START WITH A LINE' end
+  if get('edit_mode')=='1' then title='EDITING IN REAPER' elseif not a then title='START WITH A LINE' end
   text(20,202,title,24)
   color(.70,.76,.83)
   local detail=run and (phase=='SPEAK' and 'Speak at the green line' or phase=='TAIL' and 'Finishing the take' or 'Count-in: '..phase)
     or 'Select a mode above. Audition and comp takes in REAPER.'
+  if get('edit_mode')=='1' then detail='Guide silent / cue tracks hidden / recordings available in REAPER' end
   text(20,235,detail,14)
   local timing=a and string.format('%.2f - %.2fs',a,b) or 'No cue yet'
   gfx.setfont(1,'Arial',14)
@@ -435,5 +504,6 @@ r.atexit(function()
 end)
 gfx.init('DAD 310 ADR Cue',960,580,0)
 refresh()
-if bounds() then notice("Ready. Rehearse plays the guide; Perform and Record silence it at your entrance.") end
+if get('edit_mode')=='1' then notice("Edit mode is active. Click Return to ADR to restore the hidden tracks and guide level.")
+elseif bounds() then notice("Ready. Rehearse plays the guide; Perform and Record silence it at your entrance.") end
 frame()

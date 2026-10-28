@@ -65,11 +65,18 @@ local function session(options)
  api.GetSetMediaItemInfo_String=function(item,key,value,set) if set then item[key]=value end;return true,item[key] or '' end
  api.GetToggleCommandStateEx=function(_,id) assert(id==40252);return 1 end
  api.CSurf_OnRecord=function() state=5 end
+ api.Undo_BeginBlock2=function() end;api.Undo_EndBlock2=function() end
+ api.UpdateArrange=function() end;api.TrackList_AdjustWindows=function() end
+ if options.edit then
+   tracks[1].B_SHOWINTCP=1;tracks[1].B_SHOWINMIXER=0
+   beeps.B_SHOWINTCP=1;beeps.B_SHOWINMIXER=1
+   tracks[#tracks+1]={guid='phrases',B_SHOWINTCP=1,B_SHOWINMIXER=1};ext.phrases='phrases'
+ end
  local env=setmetatable({reaper=api,gfx=g},{__index=_G})
  assert(loadfile(bundle..'DAD310_ADR_Cue.lua','t',env))()
  local function tick(p) cursor=p or cursor;now=now+.04;callback() end
  local function click(x,y) g.mouse_x=x;g.mouse_y=y;g.mouse_cap=1;tick();g.mouse_cap=0;tick() end
- return {drawn=drawn,hover=function(x,y) g.mouse_x=x;g.mouse_y=y end,clear=function() for i=#drawn,1,-1 do drawn[i]=nil end end,olditem=olditem,state=function() return state end,tick=tick,click=click,guide=tracks[1],beeps=beeps,ext=ext,exit=function() exitfn() end,repeatstate=function() return repeatstate end,externalstop=function() state=0 end}
+ return {reload=function() assert(loadfile(bundle..'DAD310_ADR_Cue.lua','t',env))() end,tracks=tracks,record=rec,drawn=drawn,hover=function(x,y) g.mouse_x=x;g.mouse_y=y end,clear=function() for i=#drawn,1,-1 do drawn[i]=nil end end,olditem=olditem,state=function() return state end,tick=tick,click=click,guide=tracks[1],beeps=beeps,ext=ext,exit=function() exitfn() end,repeatstate=function() return repeatstate end,externalstop=function() state=0 end}
 end
 test('perform silences guide on entrance and restores after tail',function()
  local s=session();s.click(490,160);s.tick(9.9);assert(s.guide.D_VOL==.7)
@@ -137,6 +144,31 @@ test('tooltips stay hidden during playback',function()
  for i=1,40 do s.tick(8) end
  for _,d in ipairs(s.drawn) do assert(not d.text:find('Practice with the original',1,true)) end
  s.exit()
+end)
+test('Edit mode hides support tracks and preserves recording tracks and video mute',function()
+ local s=session({edit=true,record=true});s.click(670,25)
+ assert(s.ext.edit_mode=='1' and s.guide.D_VOL==0 and s.guide.B_MUTE==0)
+ assert(s.guide.B_SHOWINTCP==0 and s.beeps.B_SHOWINMIXER==0)
+ assert(s.record.B_SHOWINTCP==nil and s.record.I_RECARM==1)
+ s.click(490,122);assert(s.state()==0)
+ s.click(670,25)
+ assert(s.ext.edit_mode=='0' and s.guide.D_VOL==.7)
+ assert(s.guide.B_SHOWINTCP==1 and s.guide.B_SHOWINMIXER==0)
+ assert(s.beeps.B_SHOWINTCP==1 and s.beeps.B_MUTE==1)
+end)
+test('Edit mode survives closing and reopening the tool',function()
+ local s=session({edit=true});s.click(670,25);s.exit()
+ assert(s.guide.D_VOL==0 and s.ext.edit_mode=='1')
+ s.reload();s.click(670,25)
+ assert(s.guide.D_VOL==.7 and s.guide.B_SHOWINTCP==1 and s.ext.edit_mode=='0')
+end)
+test('Edit mode cannot interrupt playback',function()
+ local s=session({edit=true});s.click(490,122);s.tick(11);s.click(670,25)
+ assert(s.state()==1 and s.ext.edit_mode~='1');s.exit()
+end)
+test('Return to ADR tolerates a deleted support track',function()
+ local s=session({edit=true});s.click(670,25);table.remove(s.tracks,2);s.click(670,25)
+ assert(s.guide.D_VOL==.7 and s.ext.edit_mode=='0')
 end)
 local f=assert(io.open(testdir..'results.txt','w'));f:write(table.concat(result,'\n')..'\n');f:close()
 reaper.MB(table.concat(result,'\n'),'ADR Cue tests',0)

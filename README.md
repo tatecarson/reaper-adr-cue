@@ -47,12 +47,6 @@ For review, use REAPER's normal transport, mute the original guide, and audition
 
 The tool restores the guide level and repeat setting when you stop, close its window, or switch project tabs. Open the action again to work in a different project. Save the project after editing cues. Close the cue tool before mixing or rendering, and verify that `ADR COUNT-IN` is muted.
 
-## Finish the exercise
-
-Choose the buy take, align hard consonants, refine phrase timing, and add the location room tone. Compare the noisy original with the replacement. Listen for matching pitch, rhythm, emphasis, and room perspective.
-
-Use ordinary REAPER playback for this comparison. The tool's rehearsal controls are for making a new performance.
-
 ## Current limits
 
 - One active line per project. Duplicate the project for another line if you want to retain a separate cue setup.
@@ -62,14 +56,6 @@ Use ordinary REAPER playback for this comparison. The tool's rehearsal controls 
 - Keep metronome/count-in options off for this exercise to avoid adding another count-in. Keep phrase and beep tracks in the time timebase when changing tempo.
 - Do not change guide routing or edit cue tracks during a run. After an unexpected interruption, reopen the tool to recover temporary guide and take-mute settings before saving or rendering.
 - The automated timing and restoration tests use a simulated REAPER environment. Live scrolling, video playback, microphone recording, and hardware latency need an instructor smoke test before student rollout.
-
-## Five-minute instructor check
-
-1. In a copy of a project, create a short line starting at ten seconds and assign its guide.
-2. Rehearse. Confirm three beeps and phrase entrances against the picture.
-3. Perform. Confirm the original becomes silent at the entrance and returns after Stop. Try stopping early and closing the cue window during playback.
-4. Record two takes using the classroom interface. Confirm both are retained, old takes are silent during the next recording, and you can audition and comp them in REAPER's fixed item lanes.
-5. Save, reopen, run the tool again, and check that phrase positions and the guide assignment persist. Confirm ordinary playback and final rendering contain no cue beeps.
 
 ## Development
 

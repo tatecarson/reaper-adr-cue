@@ -1,14 +1,14 @@
 # DAD 310 ADR Cue
 
-Version 0.3.1. Built for DAD 310: Sound Design for Film at Dakota State University.
+Version 0.4.1. Built for DAD 310: Sound Design for Film at Dakota State University.
 
-A REAPER script for replacing one line to picture. It provides scrolling phrase cues, a separate amber three-second count-in strip, three audio beeps, and guide playback control. Everything runs locally.
+A REAPER script for preparing a scene of dialogue cues and recording replacements to picture. It provides scrolling phrase cues, a separate amber three-second count-in strip, three audio beeps, and guide playback control. Everything runs locally.
 
 ## Install
 
-[Download ADR Cue v0.3.1](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.3.1/dad310-adr-cue-v0.3.1.zip). Download the whole ZIP, not an individual Lua file.
+[Download ADR Cue v0.4.1](https://github.com/tatecarson/reaper-adr-cue/releases/download/v0.4.1/dad310-adr-cue-v0.4.1.zip). Extract the complete ZIP so the script and its support files stay together.
 
-1. Extract the entire ZIP into a permanent folder. Keep `DAD310_ADR_Cue.lua`, `adr_core.lua`, and `adr-beep.wav` together.
+1. Extract the entire ZIP into a permanent folder. Keep `DAD310_ADR_Cue.lua`, `adr_core.lua`, `adr_text.lua`, and `adr-beep.wav` together.
 2. In REAPER 7, open **Actions > Show action list**.
 3. Choose **New action > Load ReaScript**, then select `DAD310_ADR_Cue.lua`.
 4. Select the new action and click **Run/close**. You can assign it a shortcut or toolbar button.
@@ -21,18 +21,42 @@ Controls are grouped into Setup, Edit timing, Rehearse, and Record. Rest the poi
 
 Neutral controls prepare the cue. Blue controls rehearse it. The red Record button captures audio; the square Stop button ends the run. Labels and icons reinforce color. The larger dialogue area uses a fixed green reading line; amber is reserved for the count-in strip.
 
-## Prepare a line
+## Spot a whole scene before recording
 
-1. Save your project in its own folder. Import the phone video and open REAPER's video window.
-2. Place the video far enough into the project that the dialogue entrance is at least four seconds after project zero. Ten seconds is convenient. Keep the original audio with its picture.
-3. Drag a **time selection** covering the line, from the first spoken sound to the end. Turn off beat snapping when matching speech.
-4. Click **New line**. Type the dialogue, using `|` between phrases. For example: `Wait a second. | I left my keys | on the table.`
-5. The tool creates `ADR PHRASES`, `ADR COUNT-IN`, and `ADR RECORD` tracks. Initial phrases occupy equal portions of the selected range. This is a starting layout, not automatic speech alignment.
-6. Select the original dialogue track and click **Set guide**. A video track with its original audio is fine. Use a plain track without sends, hardware outputs, or volume automation. Clear track solos.
-7. Listen to the original. Move each phrase item so its left edge matches the phrase's beginning. Trim its right edge to the phrase's end. Leave gaps for breaths. Use short phrases so the scrolling text remains readable. Select a phrase item and click **Edit phrase** to change its words.
-8. Put the cue window beside or below the picture. The first word of each phrase crosses the fixed green line at that phrase's start. The underline shows its duration. Words within a phrase are not individually aligned. For finer control, create shorter phrases.
+1. Save the project. Import the picture and guide audio, leaving at least four seconds before the first cue. Open the video window.
+2. Select the whole scene's time range. Click **Paste scene**, then **Paste text**, or **Load .txt** for a UTF-8 script file.
+3. Edit the script in the large, resizable text area. Click to position the cursor and type `|` breaks. Enter starts a new line. Use arrows, drag or Shift to select, Ctrl/Cmd+A to select all, Ctrl/Cmd+V to paste, and Ctrl/Cmd+Z to undo. Long lines wrap without changing the script.
 
-**Use range** changes the overall entrance and end from the current time selection and rebuilds the beeps. It does not move the phrase items. **New line** replaces the cue and phrase items after confirmation; recorded takes remain.
+   Use one speaker turn per line, such as:
+
+   ```text
+   **Johnny:** They're coming to get you, Barbra.
+   **Barbra:** Stop it. You're ignorant.
+   Johnny: They're coming for you, Barbra.
+   ```
+
+4. Check the preview, then **Add cues**. Each turn becomes a separate recording cue. Speaker names remain in the cue list but are removed from the scrolling dialogue. Names spoken within dialogue, such as Barbra or Johnny, are kept.
+5. Initial cue durations are distributed by word count across the selected scene. This is a rough layout, not speech detection. Before the talent arrives, choose each cue, move/trim its phrase items to the actual speech, select that line's exact time range, then click **Use range**.
+6. Select the original dialogue track and click **Set guide**. Use a plain track without sends, hardware outputs, or volume automation. Clear track solos.
+7. Save the project. During the session, use **Previous**, **Next**, or the cue list to select a prepared line. The three beeps move to that cue automatically. Other cues, phrase edits, and recordings stay in place.
+
+Clipboard access uses SWS if present, otherwise the system clipboard on macOS or Windows. No extension is required. **Load .txt** works if clipboard access is unavailable.
+
+## Add one cue or adjust phrases
+
+Select a line's time range and click **Add cue**. Enter dialogue with an optional `Speaker:` label. New cues append to the session; existing cues are preserved. Older single-cue projects are upgraded in place without moving their phrase items.
+
+Use `|` inside a turn for independently timed scrolling phrases:
+
+```text
+Johnny: Do you remember one time when we were small, | we were out here? | It was from right over there.
+```
+
+The tool creates `ADR PHRASES`, `ADR COUNT-IN`, and `ADR RECORD` tracks. All prepared phrase items stay on `ADR PHRASES`; only the active cue scrolls in the window. Select an item belonging to that cue and use **Edit phrase** to change its words.
+
+Move each phrase item to its entrance and trim its end to match the guide, leaving natural pauses. The first word crosses the fixed green line at that phrase's start. Words within a phrase are not individually aligned. Shorter phrases provide more timing landmarks. `|` does not create separate recording passes.
+
+**Use range** updates only the active cue's entrance and end from the current time selection and rebuilds its beeps. It does not move phrase items. Switching cues is blocked during playback or recording; stop first.
 
 ## Rehearse and record
 
@@ -63,7 +87,7 @@ Edit mode persists after closing the tool and saves with your project. Version 0
 
 ## Current limits
 
-- One active line per project. Duplicate the project for another line if you want to retain a separate cue setup.
+- One cue runs at a time. You choose the next cue after stopping; there is no automatic advance or speech alignment.
 - The count-in strip and dialogue appear in a companion window, not over the video or in an exported movie.
 - Drawing and guide silencing follow REAPER's script refresh cycle. They are not sample-accurate, and smoothness depends on system load. Beeps are audio items on the timeline. Project playback rate must be 1.0.
 - Use the tool's Record button for automatic guide control. Starting recording from REAPER's own transport does not start an ADR run.
@@ -83,8 +107,6 @@ lua -e 'reaper={MB=function(text) print(text) end}' tests/Run_ADR_tests.lua
 
 The tests simulate REAPER transport and track state; they do not replace audio-interface and video-sync testing.
 
-## Interface preview
+## Interface
 
-![Rendered interface preview](docs/interface-preview.png)
-
-This preview is rendered from the drawing code with simulated cue data.
+The top row contains **Paste scene**, **Previous**, the saved cue list, and **Next**. The setup, timing, rehearsal, and recording controls remain below it. Speaker names appear in the list, while the scrolling area contains only dialogue.
